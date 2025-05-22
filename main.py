@@ -1,6 +1,7 @@
 import argparse
 import os
 from dotenv import load_dotenv
+from compare import handle_compare_command
 
 # โหลด environment variables จากไฟล์ .env
 # ควรทำตั้งแต่ต้นๆ ของสคริปต์ เพื่อให้ตัวแปรพร้อมใช้งาน
@@ -26,6 +27,11 @@ def main():
     # price_parser.add_argument("coin_id", type=str, help="The ID of the cryptocurrency (e.g., bitcoin, ethereum).")
     # price_parser.add_argument("vs_currency", type=str, help="The currency to compare against (e.g., usd, thb).")
 
+    # --- Subcommand: compare ---
+    compare_parser = subparsers.add_parser("compare", help="Compare multiple cryptocurrencies.")
+    compare_parser.add_argument("coins", nargs="+", help="List of coin IDs to compare (e.g., bitcoin ethereum)")
+    compare_parser.add_argument("vs_currency", help="The currency to compare against (e.g., usd, thb)")
+    
     # --- (Subcommands อื่นๆ จะถูกเพิ่มใน feature branches ของตัวเอง) ---
     # list_parser = subparsers.add_parser("list", help="List available data types or coins.")
     # compare_parser = subparsers.add_parser("compare", help="Compare multiple cryptocurrencies.")
@@ -38,6 +44,8 @@ def main():
     #     # เรียกฟังก์ชันสำหรับ price feature (จะถูกเขียนใน feature/get-price branch)
     #     # handle_price_command(args)
     #     pass
+    if args.command == "compare":
+        handle_compare_command(args)
     # elif args.command == "list":
     #     # handle_list_command(args)
     #     pass
@@ -53,9 +61,9 @@ def main():
 
 
 if __name__ == "__main__":
-    if COINGECKO_API_KEY is None:
+    '''if COINGECKO_API_KEY is None:
         print("Warning: COINGECKO_API_KEY not found in .env file or environment variables.")
         print("Some features might not work correctly or might be rate-limited.")
         print("Please create a .env file with COINGECKO_API_KEY='your_api_key_here'.")
-        print("-" * 30)
+        print("-" * 30)'''
     main()
