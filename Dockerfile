@@ -1,12 +1,15 @@
-FROM python:3.9-slim-buster
+FROM python:3.13-slim
 
-WORKDIR /app
+WORKDIR /CryptoCLI
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install -r requirements.txt
-RUN pip install python-dotenv
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["python", "main.py", "top"] 
-#Default command to run
+ENTRYPOINT ["python", "main.py"]
