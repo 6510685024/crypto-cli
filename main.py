@@ -1,9 +1,10 @@
-import argparse
-import os
-import requests
+import argparse, os, sys, requests
 from dotenv import load_dotenv
-from compare import handle_compare_command # << ตรวจสอบว่าชื่อไฟล์และฟังก์ชันถูกต้อง
-import top_coins 
+from compare import handle_compare_command 
+import top_coins
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
 
 # โหลด environment variables จากไฟล์ .env
 load_dotenv()
@@ -111,6 +112,33 @@ def handle_top_command(args):
     else:
         print("No data received from top_coins.get_top_coins.")
 
+console = Console()
+panel_width = 80
+
+# --- เพิ่มฟังก์ชันสำหรับ help ---
+def handle_help_command(args=None):
+    help_text = Text("\n📚 Available commands:\n", style="bold #7fea25")
+    help_text.append("  list      ", style="bold cyan")
+    help_text.append("List top N cryptocurrencies by market cap.\n")
+    help_text.append("  price     ", style="bold cyan")
+    help_text.append("Get the current price of a coin.\n")
+    help_text.append("  compare   ", style="bold cyan")
+    help_text.append("Compare multiple cryptocurrencies.\n")
+    help_text.append("  top       ", style="bold cyan")
+    help_text.append("Display top N cryptocurrencies with sorting.\n")
+    help_text.append("  info      ", style="bold cyan")
+    help_text.append("Show information of each coins.\n")
+    help_text.append("  help      ", style="bold cyan")
+    help_text.append("Show this help message.\n\n")
+
+    example = Text("👉 Example:\n", style="bold #f6ce62")
+    example.append("  python main.py price bitcoin usd\n", style="#fd7323")
+    example.append("  python main.py compare bitcoin ethereum usd\n", style="#fd7323")
+    example.append("  python main.py top --limit 5 --vs_currency thb\n", style="#fd7323")
+    
+    console.print(Panel(help_text + example, title="Crypto CLI Help", width=panel_width, border_style="#039ac3"))
+    #console.print(Panel(example, title="Examples", width=panel_width, border_style="yellow"))
+    
 # (ถ้า feature compare มีฟังก์ชัน data getter แยก ก็ควรจะ define ไว้แถวนี้ หรือ import มา)
 # from compare import get_compare_data # ตัวอย่าง
 
@@ -139,13 +167,28 @@ def main():
     top_parser.add_argument("--sort-by", type=str, default="market_cap", choices=['market_cap', 'volume'], help="Sort by 'market_cap' or 'volume' (default: market_cap).")
     top_parser.set_defaults(func=handle_top_command)
 
-    # --- Subcommand: compare (เพิ่มเข้ามา) ---
+    # --- Subcommand: compare ---
     compare_parser = subparsers.add_parser("compare", help="Compare multiple cryptocurrencies.")
-    compare_parser.add_argument("coins", nargs="+", help="List of coin IDs to compare (e.g., bitcoin ethereum)") # 'coins' คือชื่อ argument ที่จะเก็บ list ของ coin IDs
-    compare_parser.add_argument("vs_currency", help="The currency to compare against (e.g., usd, thb)") # 'vs_currency' คือชื่อ argument สำหรับสกุลเงิน
-    compare_parser.set_defaults(func=handle_compare_command) # << สำคัญมาก!
-
+    compare_parser.add_argument("coins", nargs="+", help="List of coin IDs to compare (e.g., bitcoin ethereum)") 
+    compare_parser.add_argument("vs_currency", help="The currency to compare against (e.g., usd, thb)") 
+    compare_parser.set_defaults(func=handle_compare_command)
+    
     # --- (Subcommands อื่นๆ สามารถเพิ่มตามแพทเทิร์นนี้) ---
+    
+    # --- Subcommand: help ---
+    help_parser = subparsers.add_parser("help", help="Show all available commands and example.")
+    help_parser.set_defaults(func=handle_help_command)
+
+    # ดักกรณีรัน python main.py โดยไม่ใส่ subcommand
+    if len(sys.argv) == 1:
+        warning = Text()
+        warning.append("\n👉 Try one of the following to get started:\n", style="bold green")
+        warning.append("\n  python main.py help       # Show available commands\n", style="cyan")
+        warning.append("  python main.py -h         # Show full usage\n", style="cyan")
+        warning.append("  python main.py --help     # Show full usage\n", style="cyan")
+
+        console.print(Panel(warning, title="No command provided", width=panel_width, border_style="red"))
+        sys.exit(0)
 
     args = parser.parse_args() # เรียก parse_args เพียงครั้งเดียว
 
