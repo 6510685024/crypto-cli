@@ -50,7 +50,6 @@ def get_coin_price_data(coin_id, vs_currency): # เปลี่ยนชื่�
 
 def handle_price_command(args):
     """Handles the 'price' subcommand."""
-    print(f"Fetching price for {args.coin_id} in {args.vs_currency}...")
     price = get_coin_price_data(args.coin_id.lower(), args.vs_currency.lower())
     if price is not None:
         print(f"The current price of {args.coin_id.capitalize()} is: {price} {args.vs_currency.upper()}")
@@ -85,7 +84,6 @@ def get_top_coins_list_data(limit=10, vs_currency='thb'): # คล้ายก�
 
 def handle_list_command(args):
     """Handles the 'list' subcommand."""
-    print(f"\nFetching Top {args.limit} coins by Market Cap in {args.currency.upper()}...\n")
     coins_data = get_top_coins_list_data(limit=args.limit, vs_currency=args.currency.lower())
 
     if coins_data:
@@ -108,35 +106,25 @@ def handle_list_command(args):
 # --- ฟังก์ชันสำหรับ Feature 'top_coins' (ของ Alex - ย้ายมาจากด้านล่าง) ---
 def handle_top_command(args):
     """Handles the 'top' subcommand."""
-    print("handle_top_command is being executed.") # Debug message จาก Alex
-    currency = args.vs_currency.lower() # ควรใช้ .lower() เพื่อความสอดคล้อง
+    currency = args.vs_currency.lower()
     limit = args.limit
-    # ตรวจสอบ nargs='?' ของ limit (ถ้ายังคงใช้)
-    # ถ้า top_parser.add_argument("--limit", type=int, default=10) (ไม่มี nargs) จะง่ายกว่า
-    if isinstance(limit, list) and limit: # กรณี nargs='?' แล้วผู้ใช้ใส่ค่า
+    # ... (ส่วนจัดการ limit ถ้ายังใช้ nargs='?') ...
+    if isinstance(limit, list) and limit:
         limit = limit[0]
-    elif limit is None : # กรณี nargs='?' แล้วผู้ใช้ไม่ได้ใส่ค่า (ไม่ควรเกิดถ้ามี default ที่ถูกต้อง)
-         # ใน top_parser args.limit มี default=10 และ nargs='?'
-         # ถ้าผู้ใช้ไม่ใส่ --limit มันควรจะได้ 10
-         # ถ้าผู้ใช้ใส่ --limit โดยไม่มี value มันอาจจะ error หรือได้ค่าพิเศษ
-         # ทางที่ดีคือเอา nargs='?' ออกจาก --limit ถ้าไม่ต้องการให้มันรับ 0 หรือ 1 argument จริงๆ
-         print("Warning: Limit for 'top' command was not correctly parsed, using default 10.")
-         limit = 10
-
-
+    elif limit is None :
+         # print("Warning: Limit for 'top' command was not correctly parsed, using default 10.") # << เอาออก หรือ comment
+         limit = 10 # ควรมาจาก default ของ argparse ถ้าตั้งค่าถูกต้อง
+    
     sort = args.sort_by
-    print(f"Attempting to fetch top coins: currency={currency}, limit={limit}, sort_by={sort}") # Debug เพิ่มเติม
+    # print(f"Attempting to fetch top coins: currency={currency}, limit={limit}, sort_by={sort}") # << เอาออก หรือ comment
 
-    # เรียกฟังก์ชันจากไฟล์ top_coins.py
     data = top_coins.get_top_coins(currency=currency, top_n=limit, sort_by=sort, api_key=COINGECKO_API_KEY)
 
     if data:
-        print("Data received from top_coins.get_top_coins:") # Debug message จาก Alex
-        # print(data) # แสดง raw data อาจจะเยอะไป
         print(f"\nTop {limit} Coins (Sorted by {sort.replace('_', ' ').title()}) in {currency.upper()}:")
         print(f"{'Rank':<5} {'Name':<25} {'Symbol':<10} {'Price':<15} {'Market Cap':<20} {'Volume (24h)':<20}")
         print("-" * 100)
-        for i, coin in enumerate(data): # สมมติ data เป็น list of dicts ที่มี key ตามที่คาดหวัง
+        for i, coin in enumerate(data):
             rank = i + 1
             name = coin.get('name', 'N/A')
             symbol = coin.get('symbol', 'N/A').upper()
@@ -152,9 +140,7 @@ def handle_top_command(args):
     else:
         print("No data received from top_coins.get_top_coins.")
 
-
 def main():
-    print("Main function started.") # Debug message จาก Alex
     parser = argparse.ArgumentParser(
         description="Crypto CLI - Fetch cryptocurrency data from CoinGecko API."
     )
