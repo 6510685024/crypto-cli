@@ -1,89 +1,200 @@
 import argparse
 import os
+import requests
 from dotenv import load_dotenv
-import top_coins  # Import ไฟล์ top_coins.py
+import top_coins  # Import ไฟล์ top_coins.py (ของ Alex)
+# (ถ้ามี feature list แยกไฟล์ ก็ import มาด้วย เช่น from list_feature import add_list_subparser, handle_list_command)
 
 # โหลด environment variables จากไฟล์ .env
-# ควรทำตั้งแต่ต้นๆ ของสคริปต์ เพื่อให้ตัวแปรพร้อมใช้งาน
 load_dotenv()
 
 # ดึง API Key จาก environment variable
-# ถ้าไม่มีการตั้งค่า COINGECKO_API_KEY ใน .env หรือ environment จริง
-# ตัวแปรนี้จะเป็น None ซึ่งเราสามารถจัดการได้ในฟังก์ชันที่เรียก API
 COINGECKO_API_KEY = os.getenv("COINGECKO_API_KEY")
 
-# URL พื้นฐานของ CoinGecko API (สามารถย้ายไปไว้ในฟังก์ชันที่เรียก API ได้ถ้าต้องการ)
+# URL พื้นฐานของ CoinGecko API
 BASE_API_URL = "https://api.coingecko.com/api/v3"
 
+# --- ฟังก์ชันสำหรับ Feature 'price' (ของคุณ) ---
+def get_coin_price_data(coin_id, vs_currency): # เปลี่ยนชื่อเล็กน้อยเพื่อความชัดเจนว่าเป็น data getter
+    """
+    Fetches the current price of a given cryptocurrency in a specified currency
+    using the CoinGecko API.
+    """
+    endpoint = f"{BASE_API_URL}/simple/price"
+    params = {
+        'ids': coin_id,
+        'vs_currencies': vs_currency,
+    }
+    if COINGECKO_API_KEY:
+        params['x_cg_demo_api_key'] = COINGECKO_API_KEY
+
+    try:
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        if coin_id in data and vs_currency in data[coin_id]:
+            return data[coin_id][vs_currency]
+        else:
+            print(f"Error: Could not retrieve price for '{coin_id}' in '{vs_currency}'.")
+            # ... (ส่วน debug message เดิม สามารถคงไว้ได้) ...
+            return None
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP error occurred: {http_err}")
+        # ... (ส่วน error handling เดิม สามารถคงไว้ได้) ...
+    except requests.exceptions.RequestException as req_err: # จับ error กว้างๆ
+        print(f"An API request error occurred: {req_err}")
+    except ValueError: # JSONDecodeError
+        print("Error: Could not decode JSON response from API.")
+    return None
+
+def handle_price_command(args):
+    """Handles the 'price' subcommand."""
+    print(f"Fetching price for {args.coin_id} in {args.vs_currency}...")
+    price = get_coin_price_data(args.coin_id.lower(), args.vs_currency.lower())
+    if price is not None:
+        print(f"The current price of {args.coin_id.capitalize()} is: {price} {args.vs_currency.upper()}")
+
+# --- ฟังก์ชันสำหรับ Feature 'list' (เพิ่มใหม่ตามโครงสร้าง) ---
+def get_top_coins_list_data(limit=10, vs_currency='thb'): # คล้ายกับ list_top_coins เดิม
+    """
+    Fetches top N cryptocurrencies by market cap.
+    """
+    endpoint = f"{BASE_API_URL}/coins/markets"
+    params = {
+        'vs_currency': vs_currency,
+        'order': 'market_cap_desc',
+        'per_page': limit,
+        'page': 1,
+        'sparkline': 'false'
+    }
+    if COINGECKO_API_KEY:
+        params['x_cg_demo_api_key'] = COINGECKO_API_KEY
+
+    try:
+        response = requests.get(endpoint, params=params)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP error occurred while fetching top coins list: {http_err}")
+    except requests.exceptions.RequestException as e:
+        print(f"API request error for top coins list: {e}")
+    except ValueError:
+        print("Error: Could not decode JSON response for top coins list.")
+    return None
+
+def handle_list_command(args):
+    """Handles the 'list' subcommand."""
+    print(f"\nFetching Top {args.limit} coins by Market Cap in {args.currency.upper()}...\n")
+    coins_data = get_top_coins_list_data(limit=args.limit, vs_currency=args.currency.lower())
+
+    if coins_data:
+        print(f"{'Rank':<5} {'Name':<25} {'Symbol':<10} {'Price':<15} {'Market Cap':<20}")
+        print("-" * 80)
+        for i, coin in enumerate(coins_data):
+            rank = i + 1
+            name = coin.get('name', 'N/A')
+            symbol = coin.get('symbol', 'N/A').upper()
+            price_val = coin.get('current_price', 'N/A')
+            market_cap = coin.get('market_cap', 'N/A')
+            # จัด format ตัวเลขให้อ่านง่าย
+            price_str = f"{price_val:,}" if isinstance(price_val, (int, float)) else str(price_val)
+            market_cap_str = f"{market_cap:,}" if isinstance(market_cap, (int, float)) else str(market_cap)
+            print(f"{rank:<5} {name:<25} {symbol:<10} {price_str:<15} {market_cap_str:<20}")
+    else:
+        print("No data received for the list of top coins.")
+
+
+# --- ฟังก์ชันสำหรับ Feature 'top_coins' (ของ Alex - ย้ายมาจากด้านล่าง) ---
+def handle_top_command(args):
+    """Handles the 'top' subcommand."""
+    print("handle_top_command is being executed.") # Debug message จาก Alex
+    currency = args.vs_currency.lower() # ควรใช้ .lower() เพื่อความสอดคล้อง
+    limit = args.limit
+    # ตรวจสอบ nargs='?' ของ limit (ถ้ายังคงใช้)
+    # ถ้า top_parser.add_argument("--limit", type=int, default=10) (ไม่มี nargs) จะง่ายกว่า
+    if isinstance(limit, list) and limit: # กรณี nargs='?' แล้วผู้ใช้ใส่ค่า
+        limit = limit[0]
+    elif limit is None : # กรณี nargs='?' แล้วผู้ใช้ไม่ได้ใส่ค่า (ไม่ควรเกิดถ้ามี default ที่ถูกต้อง)
+         # ใน top_parser args.limit มี default=10 และ nargs='?'
+         # ถ้าผู้ใช้ไม่ใส่ --limit มันควรจะได้ 10
+         # ถ้าผู้ใช้ใส่ --limit โดยไม่มี value มันอาจจะ error หรือได้ค่าพิเศษ
+         # ทางที่ดีคือเอา nargs='?' ออกจาก --limit ถ้าไม่ต้องการให้มันรับ 0 หรือ 1 argument จริงๆ
+         print("Warning: Limit for 'top' command was not correctly parsed, using default 10.")
+         limit = 10
+
+
+    sort = args.sort_by
+    print(f"Attempting to fetch top coins: currency={currency}, limit={limit}, sort_by={sort}") # Debug เพิ่มเติม
+
+    # เรียกฟังก์ชันจากไฟล์ top_coins.py
+    data = top_coins.get_top_coins(currency=currency, top_n=limit, sort_by=sort, api_key=COINGECKO_API_KEY)
+
+    if data:
+        print("Data received from top_coins.get_top_coins:") # Debug message จาก Alex
+        # print(data) # แสดง raw data อาจจะเยอะไป
+        print(f"\nTop {limit} Coins (Sorted by {sort.replace('_', ' ').title()}) in {currency.upper()}:")
+        print(f"{'Rank':<5} {'Name':<25} {'Symbol':<10} {'Price':<15} {'Market Cap':<20} {'Volume (24h)':<20}")
+        print("-" * 100)
+        for i, coin in enumerate(data): # สมมติ data เป็น list of dicts ที่มี key ตามที่คาดหวัง
+            rank = i + 1
+            name = coin.get('name', 'N/A')
+            symbol = coin.get('symbol', 'N/A').upper()
+            price_val = coin.get('current_price', 'N/A')
+            market_cap_val = coin.get('market_cap', 'N/A')
+            volume_val = coin.get('total_volume', 'N/A')
+
+            price_str = f"{price_val:,.2f}" if isinstance(price_val, (int, float)) else str(price_val)
+            market_cap_str = f"{market_cap_val:,}" if isinstance(market_cap_val, (int, float)) else str(market_cap_val)
+            volume_str = f"{volume_val:,}" if isinstance(volume_val, (int, float)) else str(volume_val)
+
+            print(f"{rank:<5} {name:<25} {symbol:<10} {price_str:<15} {market_cap_str:<20} {volume_str:<20}")
+    else:
+        print("No data received from top_coins.get_top_coins.")
+
+
 def main():
-    print("Main function started.") # top_coins เพิ่มอันนี้
+    print("Main function started.") # Debug message จาก Alex
     parser = argparse.ArgumentParser(
         description="Crypto CLI - Fetch cryptocurrency data from CoinGecko API."
     )
-    subparsers = parser.add_subparsers(dest="command", title="Available Commands", help="Sub-command help")
-    subparsers.required = True # ทำให้ต้องมี subcommand เสมอ
+    # dest="command" อาจจะไม่จำเป็นแล้วถ้าทุก subparser ใช้ set_defaults(func=...)
+    subparsers = parser.add_subparsers(title="Available Commands", help="Sub-command help", required=True)
 
-    # --- Subcommand: price (จะถูก implement ใน feature/get-price branch) ---
-    # price_parser = subparsers.add_parser("price", help="Get the current price of a coin.")
-    # price_parser.add_argument("coin_id", type=str, help="The ID of the cryptocurrency (e.g., bitcoin, ethereum).")
-    # price_parser.add_argument("vs_currency", type=str, help="The currency to compare against (e.g., usd, thb).")
+    # --- Subcommand: price ---
+    price_parser = subparsers.add_parser("price", help="Get the current price of a coin.")
+    price_parser.add_argument("coin_id", type=str, help="The ID of the cryptocurrency (e.g., bitcoin, ethereum).")
+    price_parser.add_argument("vs_currency", type=str, help="The currency to compare against (e.g., usd, thb).")
+    price_parser.set_defaults(func=handle_price_command)
 
-    # --- (Subcommands อื่นๆ จะถูกเพิ่มใน feature branches ของตัวเอง) ---
-    # list_parser = subparsers.add_parser("list", help="List available data types or coins.")
-    # compare_parser = subparsers.add_parser("compare", help="Compare multiple cryptocurrencies.")
-    # ... และอื่นๆ
+    # --- Subcommand: list ---
+    list_parser = subparsers.add_parser("list", help="List top N cryptocurrencies by market cap.")
+    list_parser.add_argument("--limit", type=int, default=10, help="Number of top coins to display (default: 10).")
+    list_parser.add_argument("--currency", type=str, default="thb", help="The currency for price and market cap display (default: thb).")
+    list_parser.set_defaults(func=handle_list_command)
 
-    # --- Subcommand: top_coins (จะถูก implement ใน feature/top_coins branch) ---
-    top_parser = subparsers.add_parser("top", help="Display top N cryptocurrencies.")
-    top_parser.add_argument("limit", type=int, default=10, nargs='?', help="Number of top coins to display (default: 10).")
+    # --- Subcommand: top (ของ Alex) ---
+    top_parser = subparsers.add_parser("top", help="Display top N cryptocurrencies with sorting.") # แก้ help message ให้ชัดเจนขึ้น
+    # พิจารณาเอา nargs='?' ออกจาก limit ถ้าไม่จำเป็นจริงๆ เพื่อความง่ายในการจัดการ
+    top_parser.add_argument("--limit", type=int, default=10, help="Number of top coins to display (default: 10).") # เอา nargs='?' ออก
     top_parser.add_argument("--vs_currency", type=str, default="usd", help="The currency to compare against (default: usd).")
-    top_parser.add_argument("--sort_by", type=str, default="market_cap", choices=['market_cap', 'volume'], help="Sort by 'market_cap' or 'volume' (default: market_cap).")
-    top_parser.set_defaults(func=handle_top_command)
+    top_parser.add_argument("--sort-by", type=str, default="market_cap", choices=['market_cap', 'volume'], help="Sort by 'market_cap' or 'volume' (default: market_cap).")
+    top_parser.set_defaults(func=handle_top_command) # ตรวจสอบว่า Alex มีบรรทัดนี้
+
+    # --- (Subcommands อื่นๆ สามารถเพิ่มตามแพทเทิร์นนี้) ---
 
     args = parser.parse_args()
 
-    # --- การจัดการ Command ---
-    # if args.command == "price":
-    #     # เรียกฟังก์ชันสำหรับ price feature (จะถูกเขียนใน feature/get-price branch)
-    #     # handle_price_command(args)
-    #     pass
-    # elif args.command == "list":
-    #     # handle_list_command(args)
-    #     pass
-    # ... และอื่นๆ
-
-    # ถ้าไม่มี command ไหนถูกเรียก (ซึ่งไม่ควรเกิดถ้า subparsers.required = True)
-    # หรือถ้าต้องการให้แสดง help เมื่อไม่มี subcommand เฉพาะเจาะจง
-#    if not hasattr(args, 'command') or args.command is None:
-#        parser.print_help()
-#    elif not any(args.command == cmd for cmd in ["price", "list", "compare", "info", "top"]): # ตัวอย่างการตรวจสอบ
-#        print(f"Command '{args.command}' is not yet implemented or recognized.")
-#        print("Use -h or --help for available commands.")
-
-# top_coins branch
- # --- การจัดการ Command ---
+    # --- การจัดการ Command (ตามโครงสร้างของ Alex) ---
     if hasattr(args, 'func'):
-        args.func(args) # บรรทัดนี้ควรจะเรียก handle_top_command ถ้า 'top' ถูกสั่ง
-    elif not hasattr(args, 'command') or args.command is None:
+        args.func(args)
+    # elif ไม่จำเป็นถ้า required=True และทุก parser มี func (argparse จะ error เองถ้า command ไม่รู้จัก)
+    # elif not hasattr(args, 'command') or args.command is None: # ส่วนนี้อาจจะไม่ถูกเรียกถ้า subparsers.required = True
+    #     parser.print_help()
+    else: # ส่วนนี้ควรจะถูกเรียกเฉพาะถ้ามี bug ในการตั้งค่า parser หรือ command ไม่ได้ผูก func
+        print(f"Error: Command '{args.command if hasattr(args, 'command') else 'None'}' could not be processed.")
+        print("Please ensure the command is valid and implemented correctly.")
         parser.print_help()
-    else:
-        print(f"Command '{args.command}' is not yet implemented or recognized.")
-        print("Use -h or --help for available commands.")
-
-# top_coins branch
-def handle_top_command(args):
-    """Handles the 'top' subcommand."""
-    print("handle_top_command is being executed.")
-    currency = args.vs_currency
-    limit = args.limit
-    sort = args.sort_by
-    data = top_coins.get_top_coins(currency=currency, top_n=limit, sort_by=sort, api_key=COINGECKO_API_KEY)
-    if data:
-        print("Data received from get_top_coins:")
-        print(data) # เพิ่มบรรทัดนี้
-        print(f"Top {limit} coins sorted by {sort.replace('_', ' ').title()} ({currency.upper()}):")
-        for i, coin in enumerate(data):
-            print(f"{i+1}. {coin['name']} ({coin['symbol'].upper()}): Price: ${coin['current_price']:,}, Market Cap: ${coin['market_cap']:,}, Volume: ${coin['total_volume']:,}")
 
 
 if __name__ == "__main__":
