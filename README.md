@@ -96,15 +96,20 @@
 
 ### 📦 วิธีที่ 3: ใช้งานผ่าน Docker Compose
 
-1. **Build และ Run ด้วย Compose:**
+1. **สร้างไฟล์ `.env`:**
+   ```env
+   COINGECKO_API_KEY=your_api_key
+   ```
+
+2. **Build และ Run ด้วย Compose:**
    ```bash
    docker compose build
    docker compose up
    ```
 
-2. **รันคำสั่งภายใน container:**
+3. **รันคำสั่งภายใน container:**
    ```bash
-   docker compose run app <command> [arguments]
+   docker compose run crypto-cli <command> [arguments]
    ```
 
 
@@ -186,13 +191,13 @@ python main.py detail solana
 
 ## 🪙 ตัวอย่างเหรียญที่รองรับ
 
-| ชื่อเหรียญ | coin_id ที่ใช้ |
-|------------|----------------|
-| Bitcoin    | `bitcoin`      |
-| Ethereum   | `ethereum`     |
-| Solana     | `solana`       |
-| Dogecoin   | `dogecoin`     |
-| Cardano    | `cardano`      |
+| ชื่อเหรียญ  | coin_id ที่ใช้ |
+| -------- | ----------- |
+| Bitcoin  | `bitcoin`   |
+| Ethereum | `ethereum`  |
+| Solana   | `solana`    |
+| Dogecoin | `dogecoin`  |
+| Cardano  | `cardano`   |
 
 
 ## ⚠️ หมายเหตุเพิ่มเติม
