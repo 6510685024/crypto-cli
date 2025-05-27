@@ -63,54 +63,24 @@ def handle_price_command(args):
 
 
 def handle_list_command(args):
-    """Handles the 'list' subcommand (top N by market cap)."""
-    endpoint = f"{BASE_API_URL}/coins/markets"
-    params = {
-        'vs_currency': args.currency.lower(),
-        'order': 'market_cap_desc',
-        'per_page': args.limit,
-        'page': 1,
-        'sparkline': 'false'
-    }
-    if COINGECKO_API_KEY:
-        params['x_cg_demo_api_key'] = COINGECKO_API_KEY
-
-    try:
-        response = requests.get(endpoint, params=params)
-        response.raise_for_status()
-        coins_data = response.json()
-
-        if coins_data:
-            table = Table(title=f"🏆 Top {args.limit} Coins by Market Cap ({args.currency.upper()})", show_header=True, header_style="bold magenta", width=panel_width - 4)
-            table.add_column("Rank", style="dim", width=6, justify="right")
-            table.add_column("Name", style="cyan", width=25)
-            table.add_column("Symbol", style="bold yellow", width=10)
-            table.add_column(f"Price ({args.currency.upper()})", style="green", justify="right", width=18)
-            table.add_column(f"Market Cap ({args.currency.upper()})", style="blue", justify="right", width=22)
-
-            for i, coin in enumerate(coins_data):
-                rank = str(i + 1)
-                name = coin.get('name', 'N/A')[:23]
-                symbol = coin.get('symbol', 'N/A').upper()
-                price_val = coin.get('current_price')
-                market_cap = coin.get('market_cap')
-                
-                price_str = f"{price_val:,.2f}" if isinstance(price_val, (int, float)) else "N/A"
-                market_cap_str = f"{market_cap:,}" if isinstance(market_cap, (int, float)) else "N/A"
-                
-                table.add_row(rank, name, symbol, price_str, market_cap_str)
-            
-            console.print(Panel(table, title="Top Coins List", width=panel_width, border_style="magenta"))
-        else:
-            console.print(Panel(Text("No data received for the list of top coins.", style="yellow"), title="Info", width=panel_width))
-
-    except requests.exceptions.HTTPError as http_err:
-        console.print(Panel(Text(f"HTTP error occurred: {http_err}", style="bold red"), title="API Error", width=panel_width))
-    except requests.exceptions.RequestException as e:
-        console.print(Panel(Text(f"API request error: {e}", style="bold red"), title="Request Error", width=panel_width))
-    except ValueError:
-        console.print(Panel(Text("Error: Could not decode JSON response.", style="bold red"), title="JSON Error", width=panel_width))
-
+    """Displays the types of data/features available from the application."""
+    list_text_content = Text()
+    list_text_content.append("📊 Available Data Types & Features:\n\n", style="bold #FFD700 underline")
+    
+    features_info = [
+        ("Current Price", "View the current price of a specific cryptocurrency."),
+        ("Top Coins List", "List top N cryptocurrencies diversitéd by market capitalization."),
+        ("Sorted Top Coins", "Display top N cryptocurrencies with sorting by market cap or volume."),
+        ("Coin Comparison", "Compare market data across multiple specified cryptocurrencies."),
+        ("Detailed Coin Info", "Show comprehensive information for a single cryptocurrency."),
+        ("Help Information", "Display the help message listing all commands and usage examples.")
+    ]
+    
+    for i, (feature_name, description) in enumerate(features_info, 1):
+        list_text_content.append(f"{i}. {feature_name}:\n", style="bold cyan")
+        list_text_content.append(f"   {description}\n\n", style="white")
+    
+    console.print(Panel(list_text_content, title="[bold #20B2AA]Application Capabilities[/]", width=panel_width, border_style="#20B2AA", expand=False))
 
 def handle_top_command(args):
     """Handles the 'top' subcommand (flexible sorting)."""
@@ -237,9 +207,7 @@ def main():
     price_parser.set_defaults(func=handle_price_command)
 
     # --- Subcommand: list ---
-    list_parser = subparsers.add_parser("list", help="List top N cryptocurrencies by market cap.", add_help=True)
-    list_parser.add_argument("--limit", type=int, default=10, help="Number of top coins to display (default: 10).")
-    list_parser.add_argument("--currency", type=str, default="thb", help="The currency for price and market cap display (default: thb).")
+    list_parser = subparsers.add_parser("list", help="List the types of data and features available in this application.", add_help=True)
     list_parser.set_defaults(func=handle_list_command)
 
     # --- Subcommand: top ---
