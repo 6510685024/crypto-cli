@@ -1,0 +1,20 @@
+services:
+  CryptoCLI:
+    build: .
+    image: crypto-cli
+    container_name: crypto-cli
+    volumes:
+      - .:/CryptoCLI
+    working_dir: /CryptoCLI
+    environment:
+      - PYTHONUNBUFFERED=1
+      # ให้สีตรงกันทุกเครื่อง
+      - TERM=xterm-256color
+      - COLORTERM=truecolor
+      - FORCE_COLOR=1
+    # - PYTHONPYCACHEPREFIX=/tmp/__pycache__
+    #  - COINGECKO_API_KEY=${COINGECKO_API_KEY}
+    # env_file:
+    #  - .env
+    stdin_open: true
+    tty: true
