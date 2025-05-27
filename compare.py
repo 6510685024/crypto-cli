@@ -70,7 +70,7 @@ def resolve_coin_ids(user_inputs, symbol_to_ids, name_to_id):
 
     return list(dict.fromkeys(resolved_ids))  # Remove duplicates coin
 
-def handle_compare_command(args):
+def handle_compare_command(args, api_key_global=None):
     user_inputs = args.coins
     vs_currency = args.vs_currency
 

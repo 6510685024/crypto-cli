@@ -225,12 +225,10 @@ def handle_help_command(args=None): # args=None เพื่อให้ handler
 def main():
     parser = argparse.ArgumentParser(
         description="Crypto CLI - Fetch cryptocurrency data from CoinGecko API.",
-        add_help=False # ปิด help default ของ argparse เพื่อใช้ custom help
+        add_help=True
     )
-    # required=True ทำให้ต้องมี subcommand เสมอ
-    # title และ help ของ subparsers จะแสดงเมื่อใช้ -h ของ parser หลัก
-    subparsers = parser.add_subparsers(title="Available Subcommands", help="Run 'main.py <subcommand> -h' for more help on a specific command.", required=True, dest="command_name_for_error")
 
+    subparsers = parser.add_subparsers(title="Available Subcommands", help="Run 'main.py <subcommand> -h' for more help on a specific command.", required=True, dest="command_name_for_error")
 
     # --- Subcommand: price ---
     price_parser = subparsers.add_parser("price", help="Get the current price of a coin.", add_help=True) # เปิด add_help สำหรับ subparser
