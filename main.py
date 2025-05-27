@@ -1,6 +1,7 @@
 import argparse
 import os
 from dotenv import load_dotenv
+from detail import handle_detail
 
 # โหลด environment variables จากไฟล์ .env
 # ควรทำตั้งแต่ต้นๆ ของสคริปต์ เพื่อให้ตัวแปรพร้อมใช้งาน
@@ -13,6 +14,16 @@ COINGECKO_API_KEY = os.getenv("COINGECKO_API_KEY")
 
 # URL พื้นฐานของ CoinGecko API (สามารถย้ายไปไว้ในฟังก์ชันที่เรียก API ได้ถ้าต้องการ)
 BASE_API_URL = "https://api.coingecko.com/api/v3"
+
+def handle_detail_command(args):
+    data = handle_detail(args.coin_id)
+    if data:
+        print("Coin detail")
+        print(f"Coin name    : {data['name']} ({data['symbol'].upper()})")
+        print(f"Price        : ${data['current_price']:,}")
+        print(f"Market cap   : ${data['market_cap']:,}")
+        print(f"Trading vol  : ${data['total_volume']:,}")
+        print(f"Homepage     : {data['homepage']}\n")
 
 def main():
     parser = argparse.ArgumentParser(
@@ -30,6 +41,11 @@ def main():
     # list_parser = subparsers.add_parser("list", help="List available data types or coins.")
     # compare_parser = subparsers.add_parser("compare", help="Compare multiple cryptocurrencies.")
     # ... และอื่นๆ
+
+    # --- Subcommand: detail ---
+    detail_parser = subparsers.add_parser("detail", help="Display coin detail (e.g. coin price, market cap)")
+    detail_parser.add_argument("coin_id", type=str, help="Cryptocurrency (e.g. bitcoin, ethereum)")
+    detail_parser.set_defaults(func=handle_detail_command)
 
     args = parser.parse_args()
 
