@@ -183,11 +183,11 @@ def handle_help_command(args=None): # args=None เพื่อให้ handler
         help_text_content.append(f"{desc}\n", style="white")
         
     help_text_content.append("\n👉 Example Usage:\n", style="bold #32CD32")
-    help_text_content.append("  python main.py price bitcoin usd\n", style="italic #F0E68C")
-    help_text_content.append("  python main.py list --limit 5\n", style="italic #F0E68C")
-    help_text_content.append("  python main.py compare bitcoin ethereum solana usd\n", style="italic #F0E68C")
-    help_text_content.append("  python main.py top --sort-by volume --vs_currency eur\n", style="italic #F0E68C")
-    help_text_content.append("  python main.py detail solana\n", style="italic #F0E68C")
+    help_text_content.append("  docker run -it crypto-cli price bitcoin usd\n", style="italic #F0E68C")
+    help_text_content.append("  docker run -it crypto-cli list --limit 5\n", style="italic #F0E68C")
+    help_text_content.append("  docker run -it crypto-cli compare bitcoin ethereum solana usd\n", style="italic #F0E68C")
+    help_text_content.append("  docker run -it crypto-cli top --sort-by volume --vs_currency eur\n", style="italic #F0E68C")
+    help_text_content.append("  docker run -it crypto-cli detail solana\n", style="italic #F0E68C")
 
     console.print(Panel(help_text_content, title="[bold #40E0D0]Crypto CLI Help[/]", width=panel_width + 10, border_style="#40E0D0", expand=False))
 
@@ -232,7 +232,7 @@ def main():
     help_parser = subparsers.add_parser("help", help="Show this custom help message.", add_help=False) # help ของ help ไม่ต้องมี
     help_parser.set_defaults(func=handle_help_command)
     
-    # --- ดักกรณีรัน python main.py โดยไม่ใส่ subcommand ---
+    # --- ดักกรณีรัน docker run -it crypto-cli โดยไม่ใส่ subcommand ---
     if len(sys.argv) == 1:
         handle_help_command() # เรียก custom help ของเรา
         sys.exit(0) # ออกจากโปรแกรม
